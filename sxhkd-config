@@ -1,0 +1,8 @@
+alt + Return
+  xterm
+
+alt + q
+  killw "$(pfw)"
+
+~button1
+  /home/crab/derpy-wm/scripts/focus.sh "$(/home/crab/derpy-wm/scripts/underneath.sh)"
