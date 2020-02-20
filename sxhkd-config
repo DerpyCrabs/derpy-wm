@@ -1,7 +1,7 @@
-alt + Return
+Return
   xterm
 
-alt + q
+q
   killw "$(pfw)"
 
 ~button1
