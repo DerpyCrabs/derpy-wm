@@ -1,0 +1,7 @@
+- tile opened windows
+- workspaces
+- window movement
+- retile windows on window close/move
+- fullscreen toggle
+- scratchpad
+- support two monitors
