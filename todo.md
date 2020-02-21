@@ -1,4 +1,3 @@
-- introduce Workspaces and Workspace types
 - save focus in workspaces
 - change workspace event to contain workspace number
 - borders

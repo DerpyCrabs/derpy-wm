@@ -1,6 +1,5 @@
 use ::derpywm::{
-    focus_window, focused_window, parse_event, tile_workspace, Event, WindowEvent, WindowEventType,
-    WorkspaceEvent, WorkspaceEventType,
+    focus_window, focused_window, parse_event, Event, WindowEventType, WorkspaceEventType,
 };
 use std::io::{self, BufRead};
 
@@ -34,7 +33,7 @@ fn main() {
                             focus_window(event.window_id.as_str());
                         }
                     }
-                    tile_workspace(&workspaces.focused().workspace, GAP);
+                    &workspaces.focused().tile(GAP);
                 }
                 WindowEventType::CreateNotify => {
                     workspaces.add_window(event.window_id);
@@ -46,7 +45,7 @@ fn main() {
                         if let Some(window_id) = workspaces.focused().workspace.iter().last() {
                             focus_window(window_id.as_str());
                         }
-                        tile_workspace(&workspaces.focused().workspace, GAP);
+                        &workspaces.focused().tile(GAP);
                     }
                 }
                 _ => (),
@@ -59,7 +58,7 @@ fn main() {
                     if event.workspace != workspaces.focused_workspace {
                         if let Some(focused_wid) = focused_window() {
                             workspaces.move_window(focused_wid, event.workspace);
-                            tile_workspace(&workspaces.focused().workspace, GAP);
+                            &workspaces.focused().tile(GAP);
                             if let Some(window_id) = workspaces.focused().workspace.iter().last() {
                                 focus_window(window_id.as_str());
                             }
@@ -69,7 +68,7 @@ fn main() {
                 WorkspaceEventType::Cycle => {
                     if workspaces.focused().workspace.len() > 0 {
                         workspaces.focused_mut().workspace.rotate_right(1);
-                        tile_workspace(&workspaces.focused().workspace, GAP);
+                        &workspaces.focused().tile(GAP);
                     }
                 }
             },

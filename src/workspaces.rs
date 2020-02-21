@@ -1,4 +1,4 @@
-use ::derpywm::{map_window, unmap_window};
+use ::derpywm::{map_window, move_window, unmap_window};
 use std::ops::Index;
 
 #[derive(Debug, Clone)]
@@ -21,6 +21,44 @@ impl Workspace {
             focus_history: Vec::new(),
             fullscreen: None,
         }
+    }
+    pub fn tile(&self, gap: usize) {
+        let (wsw, wsh) = self.size();
+
+        match self.workspace.len() {
+            0 => return,
+            1 => {
+                let full_w = wsw - 2 * gap;
+                let full_h = wsh - 2 * gap;
+                move_window(&self.workspace[0], gap, gap, full_w, full_h);
+            }
+            n => {
+                let half_w = (wsw - 3 * gap) / 2;
+                let left_n = n / 2;
+                let right_n = n - left_n;
+                let left_h = (wsh - (left_n + 1) * gap) / left_n;
+                let right_h = (wsh - (right_n + 1) * gap) / right_n;
+                let mut left_strip = self.workspace.clone();
+                let right_strip = left_strip.split_off(left_n);
+
+                for (i, wid) in left_strip.iter().enumerate() {
+                    move_window(wid, gap, gap * (i + 1) + left_h * i, half_w, left_h);
+                }
+                for (i, wid) in right_strip.iter().enumerate() {
+                    move_window(
+                        wid,
+                        half_w + gap * 2,
+                        gap * (i + 1) + right_h * i,
+                        half_w,
+                        right_h,
+                    );
+                }
+            }
+        }
+    }
+    pub fn focus_window(&mut self, window_id: impl Into<String>) {}
+    fn size(&self) -> (usize, usize) {
+        (500, 300)
     }
 }
 
