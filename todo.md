@@ -1,4 +1,3 @@
-- workspaces
 - window movement between workspaces
 - rewrite tiling to support any number of windows
 - cycle workspace windows

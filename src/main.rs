@@ -2,6 +2,7 @@ use std::io::{self, BufRead, Result};
 use std::process::Command;
 
 const GAP: usize = 5;
+const WORKSPACES: usize = 3;
 
 #[derive(Debug, Clone, PartialEq)]
 enum WindowEventType {
@@ -59,10 +60,15 @@ fn parse_event(ev_str: Result<String>) -> Event {
             "WS_MOVE" => WorkspaceEventType::MoveWindow,
             _ => unreachable!(),
         };
-        Event::Workspace(WorkspaceEvent {
-            workspace: ev_str_parts[1].parse().expect("Invalid workspace event"),
-            event_type,
-        })
+        let workspace: usize = ev_str_parts[1].parse().expect("Invalid workspace event");
+        if workspace > 0 && workspace <= WORKSPACES {
+            Event::Workspace(WorkspaceEvent {
+                workspace: workspace - 1,
+                event_type,
+            })
+        } else {
+            Event::Unknown
+        }
     } else {
         Event::Unknown
     }
@@ -157,7 +163,7 @@ fn tile_workspace(workspace: &Vec<String>) {
 }
 
 fn main() {
-    let mut workspaces: Vec<Vec<String>> = vec![Vec::new(); 10];
+    let mut workspaces: Vec<Vec<String>> = vec![Vec::new(); WORKSPACES];
     let mut focused_workspace = 0;
     let mut last_event = Event::Unknown;
 
@@ -205,10 +211,10 @@ fn main() {
             },
             Event::Workspace(event) => match event.event_type {
                 WorkspaceEventType::Focus => {
-                    if event.workspace != focused_workspace + 1 {
+                    if event.workspace != focused_workspace {
                         workspaces[focused_workspace].iter().for_each(unmap_window);
-                        focused_workspace = event.workspace - 1;
-                        workspaces[event.workspace - 1].iter().for_each(map_window);
+                        focused_workspace = event.workspace;
+                        workspaces[event.workspace].iter().for_each(map_window);
                     }
                 }
                 WorkspaceEventType::MoveWindow => {}
