@@ -17,11 +17,7 @@ fn main() {
     let mut workspaces = Workspaces::new(WORKSPACES);
     let mut last_event = Event::Unknown;
 
-    for event in io::stdin()
-        .lock()
-        .lines()
-        .map(|ev| parse_event(ev, WORKSPACES))
-    {
+    for event in io::stdin().lock().lines().map(parse_event) {
         let event_clone = event.clone();
         println!("{:#?}", event);
         println!("{:#?}", workspaces);
@@ -49,9 +45,9 @@ fn main() {
                                 .for_each(|wid| border_window(wid, UNFOCUSED));
                             border_window(event.window_id.clone(), FOCUSED);
                             workspaces.focused_mut().focus_window(event.window_id);
+                            &workspaces.focused().tile(GAP);
                         }
                     }
-                    &workspaces.focused().tile(GAP);
                 }
                 WindowEventType::CreateNotify => {
                     workspaces.add_window(event.window_id.as_str());
@@ -72,6 +68,15 @@ fn main() {
             Event::Workspace(event) => match event {
                 WorkspaceEvent::Focus(workspace) => {
                     workspaces.focus(workspace);
+                }
+                WorkspaceEvent::FullscreenToggle => {
+                    if let Some(_) = workspaces.focused().fullscreen {
+                        workspaces.focused_mut().unfullscreen_window();
+                    } else {
+                        if let Some(focused_wid) = focused_window() {
+                            workspaces.focused_mut().fullscreen_window(focused_wid);
+                        }
+                    }
                 }
                 WorkspaceEvent::MoveWindow(workspace) => {
                     if workspace != workspaces.focused_workspace {

@@ -21,6 +21,9 @@ q
 c
   echo "WS_CYCLE" >> /tmp/derpy-wm-events
   
+f
+  echo "WS_FULLSCREEN" >> /tmp/derpy-wm-events
+  
 
 ~button1
   /home/crab/derpy-wm/scripts/focus.sh "$(/home/crab/derpy-wm/scripts/underneath.sh)"

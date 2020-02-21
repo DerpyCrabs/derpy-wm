@@ -1,6 +1,5 @@
-- fullscreen toggle
-- functional tests
 - multiwindow scratchpad with names (move to scratchpad, toggle scratchpad)
 - panel support
 - focus left|right|up|down window
+- functional tests
 - support two monitors

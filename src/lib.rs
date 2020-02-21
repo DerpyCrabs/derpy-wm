@@ -14,6 +14,7 @@ pub enum WindowEventType {
 pub enum WorkspaceEvent {
     MoveWindow(usize),
     Focus(usize),
+    FullscreenToggle,
     Cycle,
 }
 #[derive(Debug, Clone)]
@@ -29,7 +30,7 @@ pub enum Event {
     Unknown,
 }
 
-pub fn parse_event(ev_str: Result<String>, workspace_count: usize) -> Event {
+pub fn parse_event(ev_str: Result<String>) -> Event {
     let ev_str_parts: Vec<String> = ev_str
         .unwrap()
         .split_whitespace()
@@ -48,7 +49,9 @@ pub fn parse_event(ev_str: Result<String>, workspace_count: usize) -> Event {
             window_id: ev_str_parts[1].to_owned(),
             event_type,
         })
-    } else if ["WS_FOCUS", "WS_MOVE", "WS_CYCLE"].contains(&ev_str_parts[0].as_str()) {
+    } else if ["WS_FOCUS", "WS_MOVE", "WS_CYCLE", "WS_FULLSCREEN"]
+        .contains(&ev_str_parts[0].as_str())
+    {
         let workspace: Option<usize> = if ev_str_parts.len() < 2 {
             None
         } else {
@@ -62,6 +65,7 @@ pub fn parse_event(ev_str: Result<String>, workspace_count: usize) -> Event {
                 workspace.expect("WS_MOVE event takes workspace argument") - 1,
             )),
             "WS_CYCLE" => Event::Workspace(WorkspaceEvent::Cycle),
+            "WS_FULLSCREEN" => Event::Workspace(WorkspaceEvent::FullscreenToggle),
             _ => unreachable!(),
         }
     } else {
@@ -71,6 +75,20 @@ pub fn parse_event(ev_str: Result<String>, workspace_count: usize) -> Event {
 
 pub fn focus_window(window_id: impl Into<String>) {
     Command::new("wtf").arg(window_id.into()).status().ok();
+}
+
+pub fn fullscreen_window(window_id: impl Into<String> + Clone, (w, h): (usize, usize)) {
+    Command::new("chwb")
+        .arg("-s")
+        .arg("0")
+        .arg(window_id.clone().into())
+        .status()
+        .ok();
+    Command::new("wtp")
+        .args(&["0", "0", &w.to_string(), &h.to_string()])
+        .arg(window_id.into())
+        .status()
+        .ok();
 }
 
 pub fn focused_window() -> Option<String> {
