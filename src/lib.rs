@@ -11,21 +11,15 @@ pub enum WindowEventType {
 }
 
 #[derive(Debug, Clone)]
-pub enum WorkspaceEventType {
-    MoveWindow,
-    Focus,
+pub enum WorkspaceEvent {
+    MoveWindow(usize),
+    Focus(usize),
     Cycle,
 }
 #[derive(Debug, Clone)]
 pub struct WindowEvent {
     pub window_id: String,
     pub event_type: WindowEventType,
-}
-
-#[derive(Debug, Clone)]
-pub struct WorkspaceEvent {
-    pub workspace: usize,
-    pub event_type: WorkspaceEventType,
 }
 
 #[derive(Debug, Clone)]
@@ -55,25 +49,23 @@ pub fn parse_event(ev_str: Result<String>, workspace_count: usize) -> Event {
             event_type,
         })
     } else if ["WS_FOCUS", "WS_MOVE", "WS_CYCLE"].contains(&ev_str_parts[0].as_str()) {
-        let event_type = match ev_str_parts[0].as_str() {
-            "WS_FOCUS" => WorkspaceEventType::Focus,
-            "WS_MOVE" => WorkspaceEventType::MoveWindow,
-            "WS_CYCLE" => {
-                return Event::Workspace(WorkspaceEvent {
-                    workspace: 0,
-                    event_type: WorkspaceEventType::Cycle,
-                })
-            }
-            _ => unreachable!(),
-        };
-        let workspace: usize = ev_str_parts[1].parse().expect("Invalid workspace event");
-        if workspace > 0 && workspace <= workspace_count {
-            Event::Workspace(WorkspaceEvent {
-                workspace: workspace - 1,
-                event_type,
-            })
+        let workspace: Option<usize> = if ev_str_parts.len() < 2 {
+            None
         } else {
-            Event::Unknown
+            ev_str_parts[1].parse().ok()
+        };
+        if workspace < Some(0) || workspace > Some(workspace_count) {
+            panic!("Invalid workspace name")
+        }
+        match ev_str_parts[0].as_str() {
+            "WS_FOCUS" => Event::Workspace(WorkspaceEvent::Focus(
+                workspace.expect("WS_FOCUS event takes workspace argument") - 1,
+            )),
+            "WS_MOVE" => Event::Workspace(WorkspaceEvent::MoveWindow(
+                workspace.expect("WS_MOVE event takes workspace argument") - 1,
+            )),
+            "WS_CYCLE" => Event::Workspace(WorkspaceEvent::Cycle),
+            _ => unreachable!(),
         }
     } else {
         Event::Unknown

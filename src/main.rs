@@ -1,5 +1,5 @@
 use ::derpywm::{
-    focus_window, focused_window, parse_event, Event, WindowEventType, WorkspaceEventType,
+    focus_window, focused_window, parse_event, Event, WindowEventType, WorkspaceEvent,
 };
 use std::io::{self, BufRead};
 
@@ -50,14 +50,14 @@ fn main() {
                 }
                 _ => (),
             },
-            Event::Workspace(event) => match event.event_type {
-                WorkspaceEventType::Focus => {
-                    workspaces.focus(event.workspace);
+            Event::Workspace(event) => match event {
+                WorkspaceEvent::Focus(workspace) => {
+                    workspaces.focus(workspace);
                 }
-                WorkspaceEventType::MoveWindow => {
-                    if event.workspace != workspaces.focused_workspace {
+                WorkspaceEvent::MoveWindow(workspace) => {
+                    if workspace != workspaces.focused_workspace {
                         if let Some(focused_wid) = focused_window() {
-                            workspaces.move_window(focused_wid, event.workspace);
+                            workspaces.move_window(focused_wid, workspace);
                             &workspaces.focused().tile(GAP);
                             if let Some(window_id) = workspaces.focused().workspace.iter().last() {
                                 focus_window(window_id.as_str());
@@ -65,7 +65,7 @@ fn main() {
                         }
                     }
                 }
-                WorkspaceEventType::Cycle => {
+                WorkspaceEvent::Cycle => {
                     if workspaces.focused().workspace.len() > 0 {
                         workspaces.focused_mut().workspace.rotate_right(1);
                         &workspaces.focused().tile(GAP);
