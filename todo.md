@@ -1,7 +1,7 @@
-- borders
 - save focus in workspaces
 - fullscreen toggle
 - functional tests
 - multiwindow scratchpad with names (move to scratchpad, toggle scratchpad)
 - panel support
+- focus left|right|up|down window
 - support two monitors

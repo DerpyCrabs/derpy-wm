@@ -1,5 +1,6 @@
 use ::derpywm::{
-    focus_window, focused_window, parse_event, Event, WindowEventType, WorkspaceEvent,
+    border_window, focus_window, focused_window, parse_event, Event, WindowEventType,
+    WorkspaceEvent,
 };
 use std::io::{self, BufRead};
 
@@ -7,8 +8,10 @@ mod workspaces;
 
 use workspaces::Workspaces;
 
-const GAP: usize = 5;
+const GAP: usize = 10;
 const WORKSPACES: usize = 3;
+const FOCUSED: &str = "0xff0000";
+const UNFOCUSED: &str = "0x888888";
 
 fn main() {
     let mut workspaces = Workspaces::new(WORKSPACES);
@@ -24,7 +27,14 @@ fn main() {
         println!("{:#?}", workspaces);
         match event {
             Event::Window(event) => match event.event_type {
-                WindowEventType::FocusIn => {}
+                WindowEventType::FocusIn => {
+                    workspaces
+                        .focused()
+                        .workspace
+                        .iter()
+                        .for_each(|wid| border_window(wid, UNFOCUSED));
+                    border_window(event.window_id, FOCUSED);
+                }
                 WindowEventType::MapNotify => {
                     if let Event::Window(last_event) = last_event {
                         if last_event.window_id == event.window_id
@@ -33,10 +43,16 @@ fn main() {
                             focus_window(event.window_id.as_str());
                         }
                     }
+                    workspaces
+                        .focused()
+                        .workspace
+                        .iter()
+                        .for_each(|wid| border_window(wid, UNFOCUSED));
+                    border_window(event.window_id, FOCUSED);
                     &workspaces.focused().tile(GAP);
                 }
                 WindowEventType::CreateNotify => {
-                    workspaces.add_window(event.window_id);
+                    workspaces.add_window(event.window_id.as_str());
                 }
                 WindowEventType::DestroyNotify => {
                     let changed_workspace = workspaces.delete_window(event.window_id);
@@ -44,6 +60,7 @@ fn main() {
                     if changed_workspace == workspaces.focused_workspace {
                         if let Some(window_id) = workspaces.focused().workspace.iter().last() {
                             focus_window(window_id.as_str());
+                            border_window(window_id, FOCUSED);
                         }
                         &workspaces.focused().tile(GAP);
                     }
@@ -61,6 +78,7 @@ fn main() {
                             &workspaces.focused().tile(GAP);
                             if let Some(window_id) = workspaces.focused().workspace.iter().last() {
                                 focus_window(window_id.as_str());
+                                border_window(window_id, FOCUSED);
                             }
                         }
                     }

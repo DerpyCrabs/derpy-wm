@@ -54,9 +54,6 @@ pub fn parse_event(ev_str: Result<String>, workspace_count: usize) -> Event {
         } else {
             ev_str_parts[1].parse().ok()
         };
-        if workspace < Some(0) || workspace > Some(workspace_count) {
-            panic!("Invalid workspace name")
-        }
         match ev_str_parts[0].as_str() {
             "WS_FOCUS" => Event::Workspace(WorkspaceEvent::Focus(
                 workspace.expect("WS_FOCUS event takes workspace argument") - 1,
@@ -100,6 +97,17 @@ pub fn map_window(window_id: impl Into<String>) {
 pub fn unmap_window(window_id: impl Into<String>) {
     Command::new("mapw")
         .arg("-u")
+        .arg(window_id.into())
+        .status()
+        .ok();
+}
+
+pub fn border_window(window_id: impl Into<String>, color: impl Into<String>) {
+    Command::new("chwb")
+        .arg("-c")
+        .arg(color.into())
+        .arg("-s")
+        .arg("3")
         .arg(window_id.into())
         .status()
         .ok();
