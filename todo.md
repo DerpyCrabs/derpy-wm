@@ -1,6 +1,6 @@
-- window movement between workspaces
 - rewrite tiling to support any number of windows
 - cycle workspace windows
+- save focus in workspaces
 - retile windows on window move
 - borders
 - fullscreen toggle

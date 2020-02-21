@@ -75,8 +75,20 @@ fn parse_event(ev_str: Result<String>) -> Event {
 }
 
 fn focus_window(window_id: &str) {
-    Command::new("chwso").arg("-r").arg(window_id).status().ok();
     Command::new("wtf").arg(window_id).status().ok();
+}
+
+fn focused_window() -> Option<String> {
+    let output = Command::new("pfw")
+        .output()
+        .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_string())
+        .ok();
+    if let Some(wid) = output {
+        if wid != "" {
+            return Some(wid);
+        }
+    }
+    None
 }
 
 fn map_window(window_id: impl Into<String>) {
@@ -170,7 +182,7 @@ fn main() {
     for event in io::stdin().lock().lines().map(parse_event) {
         let event_clone = event.clone();
         println!("{:#?}", event);
-        println!("{:#?}", workspaces[0]);
+        println!("{:#?}", workspaces);
         match event {
             Event::Window(event) => match event.event_type {
                 WindowEventType::MapNotify => {
@@ -217,7 +229,20 @@ fn main() {
                         workspaces[event.workspace].iter().for_each(map_window);
                     }
                 }
-                WorkspaceEventType::MoveWindow => {}
+                WorkspaceEventType::MoveWindow => {
+                    if event.workspace != focused_workspace {
+                        if let Some(focused_wid) = focused_window() {
+                            unmap_window(focused_wid.as_str());
+                            workspaces[focused_workspace]
+                                .retain(|wid| wid.as_str() != focused_wid.as_str());
+                            workspaces[event.workspace].push(focused_wid);
+                            tile_workspace(&workspaces[focused_workspace]);
+                            if let Some(window_id) = workspaces[focused_workspace].iter().last() {
+                                focus_window(window_id.as_str());
+                            }
+                        }
+                    }
+                }
             },
             Event::Unknown => {}
         }
