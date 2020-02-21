@@ -17,6 +17,14 @@ pub enum WorkspaceEvent {
     FullscreenToggle,
     Cycle,
 }
+
+#[derive(Debug, Clone)]
+pub enum ScratchpadEvent {
+    AddWindow(String),
+    RemoveWindow(String),
+    ToggleWindow(String),
+}
+
 #[derive(Debug, Clone)]
 pub struct WindowEvent {
     pub window_id: String,
@@ -27,6 +35,7 @@ pub struct WindowEvent {
 pub enum Event {
     Window(WindowEvent),
     Workspace(WorkspaceEvent),
+    Scratchpad(ScratchpadEvent),
     Unknown,
 }
 
@@ -66,6 +75,17 @@ pub fn parse_event(ev_str: Result<String>) -> Event {
             )),
             "WS_CYCLE" => Event::Workspace(WorkspaceEvent::Cycle),
             "WS_FULLSCREEN" => Event::Workspace(WorkspaceEvent::FullscreenToggle),
+            _ => unreachable!(),
+        }
+    } else if ["SP_ADD", "SP_REMOVE", "SP_TOGGLE"].contains(&ev_str_parts[0].as_str()) {
+        match ev_str_parts[0].as_str() {
+            "SP_ADD" => Event::Scratchpad(ScratchpadEvent::AddWindow(ev_str_parts[1].clone())),
+            "SP_REMOVE" => {
+                Event::Scratchpad(ScratchpadEvent::RemoveWindow(ev_str_parts[1].clone()))
+            }
+            "SP_TOGGLE" => {
+                Event::Scratchpad(ScratchpadEvent::ToggleWindow(ev_str_parts[1].clone()))
+            }
             _ => unreachable!(),
         }
     } else {

@@ -24,6 +24,14 @@ c
 f
   echo "WS_FULLSCREEN" >> /tmp/derpy-wm-events
   
+h
+  echo "SP_ADD 1" >> /tmp/derpy-wm-events
+j
+  echo "SP_ADD 2" >> /tmp/derpy-wm-events
+n
+  echo "SP_TOGGLE 1" >> /tmp/derpy-wm-events
+m
+  echo "SP_TOGGLE 2" >> /tmp/derpy-wm-events
 
 ~button1
   /home/crab/derpy-wm/scripts/focus.sh "$(/home/crab/derpy-wm/scripts/underneath.sh)"

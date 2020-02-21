@@ -1,7 +1,8 @@
-- multiwindow scratchpad with names (move to scratchpad, toggle scratchpad)
 - panel support
 - focus left|right|up|down window
 - config
+- try reconciler idea
+- fix focus and tiling after scratchpad window add
 - functional tests
 - support two monitors
-- tidy up code
+- tidy up code (remove clones)

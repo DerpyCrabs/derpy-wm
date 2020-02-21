@@ -1,11 +1,13 @@
 use ::derpywm::{
-    border_window, focus_window, focused_window, parse_event, Event, WindowEventType,
-    WorkspaceEvent,
+    border_window, focus_window, focused_window, parse_event, Event, ScratchpadEvent,
+    WindowEventType, WorkspaceEvent,
 };
 use std::io::{self, BufRead};
 
+mod scratchpad;
 mod workspaces;
 
+use scratchpad::Scratchpad;
 use workspaces::Workspaces;
 
 const GAP: usize = 10;
@@ -16,6 +18,7 @@ const UNFOCUSED: &str = "0x888888";
 fn main() {
     let mut workspaces = Workspaces::new(WORKSPACES);
     let mut last_event = Event::Unknown;
+    let mut scratchpad = Scratchpad::new();
 
     for event in io::stdin().lock().lines().map(parse_event) {
         let event_clone = event.clone();
@@ -95,6 +98,20 @@ fn main() {
                         workspaces.focused_mut().workspace.rotate_right(1);
                         &workspaces.focused().tile(GAP);
                     }
+                }
+            },
+            Event::Scratchpad(event) => match event {
+                ScratchpadEvent::AddWindow(name) => {
+                    if let Some(focused_wid) = focused_window() {
+                        workspaces.delete_window(focused_wid.clone());
+                        scratchpad.add_window(name, focused_wid);
+                    }
+                }
+                ScratchpadEvent::RemoveWindow(name) => {
+                    // TODO implement removing window from scratchpad
+                }
+                ScratchpadEvent::ToggleWindow(name) => {
+                    scratchpad.toggle_window(name);
                 }
             },
             Event::Unknown => {}
