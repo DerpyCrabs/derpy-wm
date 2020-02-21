@@ -126,50 +126,35 @@ fn get_workspace_size(workspace_id: usize) -> (usize, usize) {
 
 fn tile_workspace(workspace: &Vec<String>) {
     let (wsw, wsh) = get_workspace_size(0);
-    let half_w = (wsw - 3 * GAP) / 2;
-    let half_h = (wsh - 3 * GAP) / 2;
-    let full_w = wsw - 2 * GAP;
-    let full_h = wsh - 2 * GAP;
 
     match workspace.len() {
         0 => return,
         1 => {
+            let full_w = wsw - 2 * GAP;
+            let full_h = wsh - 2 * GAP;
             move_window(&workspace[0], GAP, GAP, full_w, full_h);
         }
-        2 => {
-            move_window(&workspace[0], GAP, GAP, half_w, full_h);
-            move_window(&workspace[1], half_w + GAP * 2, GAP, half_w, full_h);
-        }
-        3 => {
-            move_window(&workspace[0], GAP, GAP, half_w, full_h);
-            move_window(&workspace[1], half_w + GAP * 2, GAP, half_w, half_h);
-            move_window(
-                &workspace[2],
-                half_w + GAP * 2,
-                half_h + GAP * 2,
-                half_w,
-                half_h,
-            );
-        }
-        _ => {
-            let mut hidden_windows = workspace.clone();
-            let visible_windows = hidden_windows.split_off(workspace.len() - 4);
-            hidden_windows
-                .iter()
-                .for_each(|wid| unmap_window(wid.as_str()));
-            visible_windows
-                .iter()
-                .for_each(|wid| map_window(wid.as_str()));
-            move_window(&visible_windows[0], GAP, GAP, half_w, half_h);
-            move_window(&visible_windows[1], GAP, half_h + GAP * 2, half_w, half_h);
-            move_window(&visible_windows[2], half_w + GAP * 2, GAP, half_w, half_h);
-            move_window(
-                &visible_windows[3],
-                half_w + GAP * 2,
-                half_h + GAP * 2,
-                half_w,
-                half_h,
-            );
+        n => {
+            let half_w = (wsw - 3 * GAP) / 2;
+            let mut left_n = n / 2;
+            let mut right_n = n - left_n;
+            let left_h = (wsh - (left_n + 1) * GAP) / left_n;
+            let right_h = (wsh - (right_n + 1) * GAP) / right_n;
+            let mut left_strip = workspace.clone();
+            let right_strip = left_strip.split_off(left_n);
+
+            for (i, wid) in left_strip.iter().enumerate() {
+                move_window(wid, GAP, GAP * (i + 1) + left_h * i, half_w, left_h);
+            }
+            for (i, wid) in right_strip.iter().enumerate() {
+                move_window(
+                    wid,
+                    half_w + GAP * 2,
+                    GAP * (i + 1) + right_h * i,
+                    half_w,
+                    right_h,
+                );
+            }
         }
     }
 }
