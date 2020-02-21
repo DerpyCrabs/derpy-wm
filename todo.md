@@ -1,8 +1,11 @@
 - workspaces
-- window movement
+- window movement between workspaces
+- rewrite tiling to support any number of windows
+- cycle workspace windows
 - retile windows on window move
 - borders
 - fullscreen toggle
 - functional tests
 - scratchpad
+- panel support
 - support two monitors

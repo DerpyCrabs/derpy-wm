@@ -4,5 +4,20 @@ Return
 q
   killw "$(pfw)"
 
+1
+  echo "WS_FOCUS 1" >> /tmp/derpy-wm-events
+2
+  echo "WS_FOCUS 2" >> /tmp/derpy-wm-events
+3
+  echo "WS_FOCUS 3" >> /tmp/derpy-wm-events
+  
+6
+  echo "WS_MOVE 1" >> /tmp/derpy-wm-events
+7
+  echo "WS_MOVE 2" >> /tmp/derpy-wm-events
+8
+  echo "WS_MOVE 3" >> /tmp/derpy-wm-events
+  
+
 ~button1
   /home/crab/derpy-wm/scripts/focus.sh "$(/home/crab/derpy-wm/scripts/underneath.sh)"

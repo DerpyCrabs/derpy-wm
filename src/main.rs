@@ -9,7 +9,6 @@ enum WindowEventType {
     CreateNotify,
     DestroyNotify,
     MapNotify,
-    Unknown,
 }
 
 #[derive(Debug, Clone)]
@@ -17,7 +16,6 @@ enum WorkspaceEventType {
     MoveWindow,
     Focus,
 }
-
 #[derive(Debug, Clone)]
 struct WindowEvent {
     window_id: String,
@@ -75,12 +73,20 @@ fn focus_window(window_id: &str) {
     Command::new("wtf").arg(window_id).status().ok();
 }
 
-fn map_window(window_id: &str) {
-    Command::new("mapw").arg("-m").arg(window_id).status().ok();
+fn map_window(window_id: impl Into<String>) {
+    Command::new("mapw")
+        .arg("-m")
+        .arg(window_id.into())
+        .status()
+        .ok();
 }
 
-fn unmap_window(window_id: &str) {
-    Command::new("mapw").arg("-u").arg(window_id).status().ok();
+fn unmap_window(window_id: impl Into<String>) {
+    Command::new("mapw")
+        .arg("-u")
+        .arg(window_id.into())
+        .status()
+        .ok();
 }
 
 fn move_window(window_id: impl Into<String>, x: usize, y: usize, w: usize, h: usize) {
@@ -151,7 +157,7 @@ fn tile_workspace(workspace: &Vec<String>) {
 }
 
 fn main() {
-    let mut workspaces: Vec<Vec<String>> = vec![Vec::new()];
+    let mut workspaces: Vec<Vec<String>> = vec![Vec::new(); 10];
     let mut focused_workspace = 0;
     let mut last_event = Event::Unknown;
 
@@ -197,7 +203,16 @@ fn main() {
                 }
                 _ => (),
             },
-            Event::Workspace(event) => {}
+            Event::Workspace(event) => match event.event_type {
+                WorkspaceEventType::Focus => {
+                    if event.workspace != focused_workspace + 1 {
+                        workspaces[focused_workspace].iter().for_each(unmap_window);
+                        focused_workspace = event.workspace - 1;
+                        workspaces[event.workspace - 1].iter().for_each(map_window);
+                    }
+                }
+                WorkspaceEventType::MoveWindow => {}
+            },
             Event::Unknown => {}
         }
         last_event = event_clone;
