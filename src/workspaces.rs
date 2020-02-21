@@ -91,6 +91,12 @@ impl Workspace {
     fn size(&self) -> (usize, usize) {
         (500, 300)
     }
+    pub fn delete_window(&mut self, window_id: impl Into<String> + Clone) {
+        self.workspace
+            .retain(|wid| wid.as_str() != window_id.clone().into());
+        self.focus_history
+            .retain(|wid| wid.as_str() != window_id.clone().into());
+    }
 }
 
 impl Index<usize> for Workspaces {
@@ -152,9 +158,7 @@ impl Workspaces {
                     changed_workspace = i;
                 }
             }
-            workspace
-                .workspace
-                .retain(|wid| wid.as_str() != window_id.clone().into());
+            workspace.delete_window(window_id.clone());
         }
         changed_workspace
     }
