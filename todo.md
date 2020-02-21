@@ -1,5 +1,6 @@
-- cycle workspace windows
+- introduce Workspaces and Workspace types
 - save focus in workspaces
+- change workspace event to contain workspace number
 - borders
 - fullscreen toggle
 - functional tests

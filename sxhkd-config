@@ -18,6 +18,9 @@ q
 8
   echo "WS_MOVE 3" >> /tmp/derpy-wm-events
   
+c
+  echo "WS_CYCLE" >> /tmp/derpy-wm-events
+  
 
 ~button1
   /home/crab/derpy-wm/scripts/focus.sh "$(/home/crab/derpy-wm/scripts/underneath.sh)"

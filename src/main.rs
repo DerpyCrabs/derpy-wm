@@ -16,6 +16,7 @@ enum WindowEventType {
 enum WorkspaceEventType {
     MoveWindow,
     Focus,
+    Cycle,
 }
 #[derive(Debug, Clone)]
 struct WindowEvent {
@@ -54,10 +55,16 @@ fn parse_event(ev_str: Result<String>) -> Event {
             window_id: ev_str_parts[1].to_owned(),
             event_type,
         })
-    } else if ["WS_FOCUS", "WS_MOVE"].contains(&ev_str_parts[0].as_str()) {
+    } else if ["WS_FOCUS", "WS_MOVE", "WS_CYCLE"].contains(&ev_str_parts[0].as_str()) {
         let event_type = match ev_str_parts[0].as_str() {
             "WS_FOCUS" => WorkspaceEventType::Focus,
             "WS_MOVE" => WorkspaceEventType::MoveWindow,
+            "WS_CYCLE" => {
+                return Event::Workspace(WorkspaceEvent {
+                    workspace: 0,
+                    event_type: WorkspaceEventType::Cycle,
+                })
+            }
             _ => unreachable!(),
         };
         let workspace: usize = ev_str_parts[1].parse().expect("Invalid workspace event");
@@ -136,8 +143,8 @@ fn tile_workspace(workspace: &Vec<String>) {
         }
         n => {
             let half_w = (wsw - 3 * GAP) / 2;
-            let mut left_n = n / 2;
-            let mut right_n = n - left_n;
+            let left_n = n / 2;
+            let right_n = n - left_n;
             let left_h = (wsh - (left_n + 1) * GAP) / left_n;
             let right_h = (wsh - (right_n + 1) * GAP) / right_n;
             let mut left_strip = workspace.clone();
@@ -226,6 +233,12 @@ fn main() {
                                 focus_window(window_id.as_str());
                             }
                         }
+                    }
+                }
+                WorkspaceEventType::Cycle => {
+                    if workspaces[focused_workspace].len() > 0 {
+                        workspaces[focused_workspace].rotate_right(1);
+                        tile_workspace(&workspaces[focused_workspace]);
                     }
                 }
             },
