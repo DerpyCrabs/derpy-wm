@@ -69,8 +69,8 @@ pub fn parse_event(ev_str: Result<String>, workspace_count: usize) -> Event {
     }
 }
 
-pub fn focus_window(window_id: &str) {
-    Command::new("wtf").arg(window_id).status().ok();
+pub fn focus_window(window_id: impl Into<String>) {
+    Command::new("wtf").arg(window_id.into()).status().ok();
 }
 
 pub fn focused_window() -> Option<String> {

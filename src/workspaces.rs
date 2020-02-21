@@ -1,5 +1,8 @@
-use ::derpywm::{map_window, move_window, unmap_window};
+use ::derpywm::{border_window, focus_window, map_window, move_window, unmap_window};
 use std::ops::Index;
+
+//TODO move all configs in one place
+const UNFOCUSED: &str = "0x888888";
 
 #[derive(Debug, Clone)]
 pub struct Workspace {
@@ -56,7 +59,16 @@ impl Workspace {
             }
         }
     }
-    pub fn focus_window(&mut self, window_id: impl Into<String>) {}
+    pub fn focus_window(&mut self, window_id: impl Into<String> + Clone) {
+        self.focus_history
+            .retain(|wid| wid.as_str() != window_id.clone().into());
+        self.focus_history.push(window_id.into());
+    }
+    pub fn focus_last_window(&self) {
+        if self.focus_history.len() > 0 {
+            focus_window(self.focus_history.iter().last().unwrap());
+        }
+    }
     fn size(&self) -> (usize, usize) {
         (500, 300)
     }
@@ -77,13 +89,17 @@ impl Workspaces {
         }
     }
     pub fn move_window(&mut self, window_id: impl Into<String> + Clone, to_workspace: usize) {
-        unmap_window(window_id.clone().into().as_str());
+        unmap_window(window_id.clone().into());
+        if let Some(wid) = self.workspaces[to_workspace].focus_history.iter().last() {
+            border_window(wid, UNFOCUSED);
+        }
         self.workspaces[self.focused_workspace]
             .workspace
             .retain(|wid| wid.as_str() != window_id.clone().into().as_str());
         self.workspaces[to_workspace]
             .workspace
-            .push(window_id.into());
+            .push(window_id.clone().into());
+        self.workspaces[to_workspace].focus_window(window_id.into())
     }
     pub fn focus(&mut self, workspace: usize) {
         if workspace != self.focused_workspace {
@@ -93,7 +109,7 @@ impl Workspaces {
                 .workspace
                 .iter()
                 .for_each(map_window);
-            // TODO Focus last window in workspace history
+            self.workspaces[workspace].focus_last_window();
         }
     }
     pub fn add_window(&mut self, window_id: impl Into<String>) {

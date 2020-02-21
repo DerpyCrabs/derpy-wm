@@ -33,7 +33,8 @@ fn main() {
                         .workspace
                         .iter()
                         .for_each(|wid| border_window(wid, UNFOCUSED));
-                    border_window(event.window_id, FOCUSED);
+                    border_window(event.window_id.clone(), FOCUSED);
+                    workspaces.focused_mut().focus_window(event.window_id);
                 }
                 WindowEventType::MapNotify => {
                     if let Event::Window(last_event) = last_event {
@@ -41,14 +42,15 @@ fn main() {
                             && last_event.event_type == WindowEventType::CreateNotify
                         {
                             focus_window(event.window_id.as_str());
+                            workspaces
+                                .focused()
+                                .workspace
+                                .iter()
+                                .for_each(|wid| border_window(wid, UNFOCUSED));
+                            border_window(event.window_id.clone(), FOCUSED);
+                            workspaces.focused_mut().focus_window(event.window_id);
                         }
                     }
-                    workspaces
-                        .focused()
-                        .workspace
-                        .iter()
-                        .for_each(|wid| border_window(wid, UNFOCUSED));
-                    border_window(event.window_id, FOCUSED);
                     &workspaces.focused().tile(GAP);
                 }
                 WindowEventType::CreateNotify => {
