@@ -124,6 +124,24 @@ pub fn focused_window() -> Option<String> {
     None
 }
 
+pub fn window_type(window_id: impl Into<String>) -> Option<String> {
+    let output = Command::new("xprop")
+        .arg("-id")
+        .arg(window_id.into())
+        .arg("_NET_WM_WINDOW_TYPE")
+        .output()
+        .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_string())
+        .ok();
+    if let Some(typ) = output {
+        let parts: Vec<String> = typ.split("=").map(|s| s.to_string()).collect();
+        if parts.len() != 2 {
+            return None;
+        }
+        return Some(parts[1].trim().to_string());
+    }
+    None
+}
+
 pub fn map_window(window_id: impl Into<String>) {
     Command::new("mapw")
         .arg("-m")

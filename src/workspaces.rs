@@ -7,6 +7,7 @@ use std::ops::Index;
 const GAP: usize = 10;
 const FOCUSED: &str = "0xff0000";
 const UNFOCUSED: &str = "0x888888";
+const PANEL: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct Workspace {
@@ -36,15 +37,15 @@ impl Workspace {
             0 => return,
             1 => {
                 let full_w = wsw - 2 * gap;
-                let full_h = wsh - 2 * gap;
+                let full_h = wsh - 2 * gap - PANEL;
                 move_window(&self.workspace[0], gap, gap, full_w, full_h);
             }
             n => {
                 let half_w = (wsw - 3 * gap) / 2;
                 let left_n = n / 2;
                 let right_n = n - left_n;
-                let left_h = (wsh - (left_n + 1) * gap) / left_n;
-                let right_h = (wsh - (right_n + 1) * gap) / right_n;
+                let left_h = (wsh - (left_n + 1) * gap - PANEL) / left_n;
+                let right_h = (wsh - (right_n + 1) * gap - PANEL) / right_n;
                 let mut left_strip = self.workspace.clone();
                 let right_strip = left_strip.split_off(left_n);
 

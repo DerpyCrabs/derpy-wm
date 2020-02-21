@@ -1,4 +1,3 @@
-- panel support
 - focus left|right|up|down window
 - config
 - try reconciler idea

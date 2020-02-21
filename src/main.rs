@@ -1,5 +1,5 @@
 use ::derpywm::{
-    border_window, focus_window, focused_window, parse_event, Event, ScratchpadEvent,
+    border_window, focus_window, focused_window, parse_event, window_type, Event, ScratchpadEvent,
     WindowEventType, WorkspaceEvent,
 };
 use std::io::{self, BufRead};
@@ -14,6 +14,7 @@ const GAP: usize = 10;
 const WORKSPACES: usize = 3;
 const FOCUSED: &str = "0xff0000";
 const UNFOCUSED: &str = "0x888888";
+const IGNORED: &str = "_NET_WM_WINDOW_TYPE_DOCK";
 
 fn main() {
     let mut workspaces = Workspaces::new(WORKSPACES);
@@ -40,15 +41,24 @@ fn main() {
                         if last_event.window_id == event.window_id
                             && last_event.event_type == WindowEventType::CreateNotify
                         {
-                            focus_window(event.window_id.as_str());
-                            workspaces
-                                .focused()
-                                .workspace
-                                .iter()
-                                .for_each(|wid| border_window(wid, UNFOCUSED));
-                            border_window(event.window_id.clone(), FOCUSED);
-                            workspaces.focused_mut().focus_window(event.window_id);
-                            &workspaces.focused().tile(GAP);
+                            (|| {
+                                if let Some(typ) = window_type(event.window_id.clone()) {
+                                    dbg!(typ.clone());
+                                    if typ == IGNORED {
+                                        workspaces.delete_window(event.window_id.as_str());
+                                        return;
+                                    }
+                                }
+                                focus_window(event.window_id.as_str());
+                                workspaces
+                                    .focused()
+                                    .workspace
+                                    .iter()
+                                    .for_each(|wid| border_window(wid, UNFOCUSED));
+                                border_window(event.window_id.clone(), FOCUSED);
+                                workspaces.focused_mut().focus_window(event.window_id);
+                                &workspaces.focused().tile(GAP);
+                            })();
                         }
                     }
                 }
