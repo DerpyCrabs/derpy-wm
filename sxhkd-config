@@ -32,6 +32,10 @@ n
   echo "SP_TOGGLE 1" >> /tmp/derpy-wm-events
 m
   echo "SP_TOGGLE 2" >> /tmp/derpy-wm-events
+y
+  echo "SP_REMOVE 1" >> /tmp/derpy-wm-events
+u
+  echo "SP_REMOVE 2" >> /tmp/derpy-wm-events
 
 ~button1
   /home/crab/derpy-wm/scripts/focus.sh "$(/home/crab/derpy-wm/scripts/underneath.sh)"

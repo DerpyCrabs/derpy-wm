@@ -3,11 +3,11 @@ use std::process::Command;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WindowEventType {
-    EnterNotify,
     CreateNotify,
     DestroyNotify,
     MapNotify,
     FocusIn,
+    FocusOut,
 }
 
 #[derive(Debug, Clone)]
@@ -46,13 +46,13 @@ pub fn parse_event(ev_str: Result<String>) -> Event {
         .split_whitespace()
         .map(ToOwned::to_owned)
         .collect();
-    if ["ENTER", "CREATE", "DESTROY", "MAP", "FOCUS_IN"].contains(&ev_str_parts[0].as_str()) {
+    if ["FOCUS_OUT", "CREATE", "DESTROY", "MAP", "FOCUS_IN"].contains(&ev_str_parts[0].as_str()) {
         let event_type = match ev_str_parts[0].as_str() {
-            "ENTER" => WindowEventType::EnterNotify,
             "CREATE" => WindowEventType::CreateNotify,
             "DESTROY" => WindowEventType::DestroyNotify,
             "MAP" => WindowEventType::MapNotify,
             "FOCUS_IN" => WindowEventType::FocusIn,
+            "FOCUS_OUT" => WindowEventType::FocusOut,
             _ => unreachable!(),
         };
         Event::Window(WindowEvent {
@@ -105,6 +105,14 @@ pub fn parse_event(ev_str: Result<String>) -> Event {
 
 pub fn focus_window(window_id: impl Into<String>) {
     Command::new("wtf").arg(window_id.into()).status().ok();
+}
+
+pub fn foreground_window(window_id: impl Into<String>) {
+    Command::new("chwso")
+        .arg("-r")
+        .arg(window_id.into())
+        .status()
+        .ok();
 }
 
 pub fn fullscreen_window(window_id: impl Into<String> + Clone, (w, h): (usize, usize)) {
@@ -190,4 +198,42 @@ pub fn move_window(window_id: impl Into<String>, x: usize, y: usize, w: usize, h
         .arg(window_id.into())
         .status()
         .ok();
+}
+
+pub fn tile_windows(
+    windows: Vec<String>,
+    gap: usize,
+    (wsw, wsh): (usize, usize),
+    panel_size: usize,
+) {
+    match windows.len() {
+        0 => return,
+        1 => {
+            let full_w = wsw - 2 * gap;
+            let full_h = wsh - 2 * gap - panel_size;
+            move_window(&windows[0], gap, gap, full_w, full_h);
+        }
+        n => {
+            let half_w = (wsw - 3 * gap) / 2;
+            let left_n = n / 2;
+            let right_n = n - left_n;
+            let left_h = (wsh - (left_n + 1) * gap - panel_size) / left_n;
+            let right_h = (wsh - (right_n + 1) * gap - panel_size) / right_n;
+            let mut left_strip = windows.clone();
+            let right_strip = left_strip.split_off(left_n);
+
+            for (i, wid) in left_strip.iter().enumerate() {
+                move_window(wid, gap, gap * (i + 1) + left_h * i, half_w, left_h);
+            }
+            for (i, wid) in right_strip.iter().enumerate() {
+                move_window(
+                    wid,
+                    half_w + gap * 2,
+                    gap * (i + 1) + right_h * i,
+                    half_w,
+                    right_h,
+                );
+            }
+        }
+    }
 }
