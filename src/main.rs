@@ -20,6 +20,7 @@ fn main() {
         match event {
             Event::Window(event) => match event.event_type {
                 WindowEventType::CreateNotify => {
+                    // TODO panel support
                     now.workspaces[now.focused_workspace]
                         .windows
                         .push(event.window_id.clone());
@@ -128,7 +129,89 @@ fn main() {
                         windows.rotate_right(1);
                     }
                 }
-                WorkspaceEvent::FocusWindow(direction) => {}
+                WorkspaceEvent::FocusWindow(direction) => {
+                    if now.workspaces[now.focused_workspace].fullscreen.is_some()
+                        || now.scratchpad.shown.is_some()
+                    {
+                        continue;
+                    }
+                    let windows = &now.workspaces[now.focused_workspace].windows;
+                    if windows.len() < 2 {
+                        continue;
+                    }
+                    let n = windows.len();
+                    let left_n = n / 2;
+                    let right_n = n - left_n;
+                    let focused_wid = now.workspaces[now.focused_workspace]
+                        .focus_history
+                        .iter()
+                        .last()
+                        .unwrap()
+                        .clone();
+                    let focused_index = windows
+                        .iter()
+                        .position(|wid| wid == focused_wid.as_str())
+                        .unwrap();
+                    match direction.as_str() {
+                        "LEFT" => {
+                            if focused_index >= left_n {
+                                let i = if right_n > focused_index {
+                                    0
+                                } else {
+                                    focused_index - right_n
+                                };
+                                let prev_window =
+                                    now.workspaces[now.focused_workspace].windows[i].clone();
+                                now.workspaces[now.focused_workspace]
+                                    .focus_history
+                                    .retain(|wid| wid != prev_window.as_str());
+                                now.workspaces[now.focused_workspace]
+                                    .focus_history
+                                    .push(prev_window);
+                            }
+                        }
+                        "RIGHT" => {
+                            if focused_index < left_n {
+                                let prev_window = now.workspaces[now.focused_workspace].windows
+                                    [focused_index + left_n]
+                                    .clone();
+                                now.workspaces[now.focused_workspace]
+                                    .focus_history
+                                    .retain(|wid| wid != prev_window.as_str());
+                                now.workspaces[now.focused_workspace]
+                                    .focus_history
+                                    .push(prev_window);
+                            }
+                        }
+                        "UP" => {
+                            if focused_index != 0 && focused_index != left_n {
+                                let prev_window = now.workspaces[now.focused_workspace].windows
+                                    [focused_index - 1]
+                                    .clone();
+                                now.workspaces[now.focused_workspace]
+                                    .focus_history
+                                    .retain(|wid| wid != prev_window.as_str());
+                                now.workspaces[now.focused_workspace]
+                                    .focus_history
+                                    .push(prev_window);
+                            }
+                        }
+                        "DOWN" => {
+                            if focused_index != (left_n - 1) && focused_index != (n - 1) {
+                                let prev_window = now.workspaces[now.focused_workspace].windows
+                                    [focused_index + 1]
+                                    .clone();
+                                now.workspaces[now.focused_workspace]
+                                    .focus_history
+                                    .retain(|wid| wid != prev_window.as_str());
+                                now.workspaces[now.focused_workspace]
+                                    .focus_history
+                                    .push(prev_window);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
             },
             Event::Scratchpad(event) => {
                 match event {

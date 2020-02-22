@@ -1,4 +1,3 @@
-- focus left|right|up|down window
 - config
 - functional tests
 - support two monitors
