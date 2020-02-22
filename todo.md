@@ -1,7 +1,7 @@
 - focus left|right|up|down window
-- config
 - try reconciler idea
 - fix focus and tiling after scratchpad window add
+- config
 - functional tests
 - support two monitors
 - tidy up code (remove clones)

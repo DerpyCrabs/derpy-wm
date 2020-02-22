@@ -69,6 +69,10 @@ impl Workspace {
             .retain(|wid| wid.as_str() != window_id.clone().into());
         self.focus_history.push(window_id.into());
     }
+    pub fn focus_up(&self) {}
+    pub fn focus_down(&self) {}
+    pub fn focus_right(&self) {}
+    pub fn focus_left(&self) {}
     pub fn focus_last_window(&self) {
         self.workspace
             .iter()

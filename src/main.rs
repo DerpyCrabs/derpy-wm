@@ -103,6 +103,13 @@ fn main() {
                         }
                     }
                 }
+                WorkspaceEvent::FocusWindow(direction) => match direction.as_str() {
+                    "up" => workspaces.focused().focus_up(),
+                    "down" => workspaces.focused().focus_down(),
+                    "right" => workspaces.focused().focus_right(),
+                    "left" => workspaces.focused().focus_left(),
+                    _ => (),
+                },
                 WorkspaceEvent::Cycle => {
                     if workspaces.focused().workspace.len() > 0 {
                         workspaces.focused_mut().workspace.rotate_right(1);
@@ -117,7 +124,7 @@ fn main() {
                         scratchpad.add_window(name, focused_wid);
                     }
                 }
-                ScratchpadEvent::RemoveWindow(name) => {
+                ScratchpadEvent::RemoveWindow(_name) => {
                     // TODO implement removing window from scratchpad
                 }
                 ScratchpadEvent::ToggleWindow(name) => {

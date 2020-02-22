@@ -29,7 +29,7 @@ impl Scratchpad {
             if wname == name.clone().into().as_str() {
                 self.shown = None;
             } else {
-                if let Some((wname, wid)) = self
+                if let Some((_, wid)) = self
                     .windows
                     .iter()
                     .find(|(wname, _)| wname == name.clone().into().as_str())
@@ -44,7 +44,7 @@ impl Scratchpad {
                 }
             }
         } else {
-            if let Some((wname, wid)) = self
+            if let Some((_, wid)) = self
                 .windows
                 .iter()
                 .find(|(wname, _)| wname == name.clone().into().as_str())

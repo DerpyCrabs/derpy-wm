@@ -14,6 +14,7 @@ pub enum WindowEventType {
 pub enum WorkspaceEvent {
     MoveWindow(usize),
     Focus(usize),
+    FocusWindow(String),
     FullscreenToggle,
     Cycle,
 }
@@ -58,9 +59,18 @@ pub fn parse_event(ev_str: Result<String>) -> Event {
             window_id: ev_str_parts[1].to_owned(),
             event_type,
         })
-    } else if ["WS_FOCUS", "WS_MOVE", "WS_CYCLE", "WS_FULLSCREEN"]
-        .contains(&ev_str_parts[0].as_str())
+    } else if [
+        "WS_FOCUS",
+        "WS_MOVE",
+        "WS_CYCLE",
+        "WS_FULLSCREEN",
+        "WS_FOCUS_WINDOW",
+    ]
+    .contains(&ev_str_parts[0].as_str())
     {
+        if ev_str_parts[0].as_str() == "WS_FOCUS_WINDOW" {
+            return Event::Workspace(WorkspaceEvent::FocusWindow(ev_str_parts[1].clone()));
+        }
         let workspace: Option<usize> = if ev_str_parts.len() < 2 {
             None
         } else {
