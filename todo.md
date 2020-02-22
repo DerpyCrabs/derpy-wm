@@ -1,4 +1,3 @@
-- config
 - functional tests
 - support two monitors
 - tidy up code (remove clones, refactor reconciler, refactor main, make references to avoid repetition)

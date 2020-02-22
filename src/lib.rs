@@ -1,5 +1,18 @@
+use serde_derive::Deserialize;
 use std::io::Result;
 use std::process::Command;
+
+#[derive(Deserialize)]
+pub struct Config {
+    pub workspaces: usize,
+    pub gaps: usize,
+    pub focused_border: String,
+    pub unfocused_border: String,
+    pub panel_width: usize,
+    pub scratchpad_size: (usize, usize),
+    // TODO read from xrandr
+    pub workspace_size: (usize, usize),
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WindowEventType {

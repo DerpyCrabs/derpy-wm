@@ -1,0 +1,7 @@
+gaps = 10
+focused_border = "0xff0000"
+unfocused_border = "0x888888"
+workspaces = 3
+panel_width = 16
+scratchpad_size = [150, 100]
+workspace_size = [500, 300]

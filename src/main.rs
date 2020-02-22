@@ -1,17 +1,22 @@
 mod reconciler;
 
 use ::derpywm::{
-    parse_event, window_type, Event, ScratchpadEvent, WindowEventType, WorkspaceEvent,
+    parse_event, window_type, Config, Event, ScratchpadEvent, WindowEventType, WorkspaceEvent,
 };
 use reconciler::{actualize_screen, WMState};
 
 use std::io::{self, BufRead};
 
-const WORKSPACES: usize = 3;
-
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() != 2 {
+        panic!("Provide config path");
+    }
+    let config_file = std::fs::read_to_string(args[1].clone()).expect("Can't find config.toml");
+    let config: Config = toml::from_str(config_file.as_str()).expect("Can't parse config file");
+
     let mut last_event = Event::Unknown;
-    let mut last_state = WMState::new(WORKSPACES);
+    let mut last_state = WMState::new(config.workspaces);
 
     for event in io::stdin().lock().lines().map(parse_event) {
         let mut now = last_state.clone();
@@ -286,7 +291,7 @@ fn main() {
             Event::Unknown => continue,
         }
 
-        now.focused_window = actualize_screen(&last_state, &now);
+        now.focused_window = actualize_screen(&last_state, &now, &config);
         last_event = event_clone;
         last_state = now;
     }

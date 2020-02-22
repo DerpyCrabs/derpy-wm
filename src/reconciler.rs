@@ -1,15 +1,7 @@
 use ::derpywm::{
     border_window, focus_window, foreground_window, fullscreen_window, map_window, move_window,
-    tile_windows, unmap_window,
+    tile_windows, unmap_window, Config,
 };
-
-const GAP: usize = 10;
-const FOCUSED: &str = "0xff0000";
-const UNFOCUSED: &str = "0x888888";
-// TODO get size for every workspace
-const SIZE: (usize, usize) = (500, 300);
-const SCRATCHPAD_SIZE: (usize, usize) = (150, 100);
-const PANEL: usize = 16;
 
 pub type ScratchpadName = String;
 pub type WindowId = String;
@@ -56,7 +48,7 @@ impl WMState {
     }
 }
 
-pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
+pub fn actualize_screen(before: &WMState, now: &WMState, config: &Config) -> Option<WindowId> {
     // Focus workspace if focused_workspace changed
     if before.focused_workspace != now.focused_workspace {
         before.workspaces[before.focused_workspace]
@@ -86,13 +78,13 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
             map_window(shown_wid);
             move_window(
                 shown_wid,
-                (SIZE.0 - SCRATCHPAD_SIZE.0) / 2,
-                (SIZE.1 - SCRATCHPAD_SIZE.1) / 2,
-                SCRATCHPAD_SIZE.0,
-                SCRATCHPAD_SIZE.1,
+                (config.workspace_size.0 - config.scratchpad_size.0) / 2,
+                (config.workspace_size.1 - config.scratchpad_size.1) / 2,
+                config.scratchpad_size.0,
+                config.scratchpad_size.1,
             );
             foreground_window(shown_wid);
-            border_window(shown_wid, FOCUSED);
+            border_window(shown_wid, config.focused_border.as_str());
         } else {
             // Need to hide shown before window
             let shown_before = before.scratchpad.shown.as_ref().unwrap();
@@ -120,13 +112,13 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
                 map_window(shown_wid);
                 move_window(
                     shown_wid,
-                    (SIZE.0 - SCRATCHPAD_SIZE.0) / 2,
-                    (SIZE.1 - SCRATCHPAD_SIZE.1) / 2,
-                    SCRATCHPAD_SIZE.0,
-                    SCRATCHPAD_SIZE.1,
+                    (config.workspace_size.0 - config.scratchpad_size.0) / 2,
+                    (config.workspace_size.1 - config.scratchpad_size.1) / 2,
+                    config.scratchpad_size.0,
+                    config.scratchpad_size.1,
                 );
                 foreground_window(shown_wid);
-                border_window(shown_wid, FOCUSED);
+                border_window(shown_wid, config.focused_border.as_str());
             }
         }
     }
@@ -160,7 +152,7 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
                 .iter()
                 .last()
                 .unwrap(),
-            UNFOCUSED,
+            config.unfocused_border.as_str(),
         );
     }
 
@@ -174,7 +166,7 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
             .fullscreen
             .as_ref()
             .unwrap();
-        border_window(wid.clone(), UNFOCUSED);
+        border_window(wid.clone(), config.unfocused_border.as_str());
     }
 
     // Tile windows if focused workspace windows changed
@@ -190,9 +182,9 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
     {
         tile_windows(
             now.workspaces[now.focused_workspace].windows.clone(),
-            GAP,
-            SIZE,
-            PANEL,
+            config.gaps,
+            config.workspace_size,
+            config.panel_width,
         );
     }
 
@@ -213,13 +205,13 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
                 map_window(scratchpad_wid);
                 move_window(
                     scratchpad_wid,
-                    (SIZE.0 - SCRATCHPAD_SIZE.0) / 2,
-                    (SIZE.1 - SCRATCHPAD_SIZE.1) / 2,
-                    SCRATCHPAD_SIZE.0,
-                    SCRATCHPAD_SIZE.1,
+                    (config.workspace_size.0 - config.scratchpad_size.0) / 2,
+                    (config.workspace_size.1 - config.scratchpad_size.1) / 2,
+                    config.scratchpad_size.0,
+                    config.scratchpad_size.1,
                 );
                 foreground_window(scratchpad_wid);
-                border_window(scratchpad_wid, FOCUSED);
+                border_window(scratchpad_wid, config.focused_border.as_str());
             }
         }
     }
@@ -230,7 +222,7 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
         || before.focused_workspace != now.focused_workspace
     {
         if let Some(fullscreen) = &now.workspaces[now.focused_workspace].fullscreen {
-            fullscreen_window(fullscreen, SIZE);
+            fullscreen_window(fullscreen, config.workspace_size);
             foreground_window(fullscreen);
         }
     }
@@ -250,7 +242,7 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
             .unwrap();
         // Unfocus previous window
         if let Some(focused_window) = &now.focused_window {
-            border_window(focused_window, UNFOCUSED);
+            border_window(focused_window, config.unfocused_border.as_str());
         }
         // Focus new window
         focus_window(fullscreen);
@@ -276,10 +268,10 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
             .as_str();
         // Unfocus previous window
         if let Some(focused_window) = &now.focused_window {
-            border_window(focused_window, UNFOCUSED);
+            border_window(focused_window, config.unfocused_border.as_str());
         }
         // Focus new window
-        border_window(shown_wid, FOCUSED);
+        border_window(shown_wid, config.focused_border.as_str());
         focus_window(shown_wid);
         return Some(shown_wid.to_string());
     }
@@ -295,10 +287,10 @@ pub fn actualize_screen(before: &WMState, now: &WMState) -> Option<WindowId> {
     {
         // Unfocus previous window
         if let Some(focused_window) = &now.focused_window {
-            border_window(focused_window, UNFOCUSED);
+            border_window(focused_window, config.unfocused_border.as_str());
         }
         // Focus new window
-        border_window(wid, FOCUSED);
+        border_window(wid, config.focused_border.as_str());
         focus_window(wid);
         return Some(wid.to_string());
     }
