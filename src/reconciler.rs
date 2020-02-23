@@ -62,7 +62,7 @@ pub fn actualize_screen(before: &WMState, now: &WMState, config: &Config) -> Opt
 
     // Show scratchpad
     if before.scratchpad.shown != now.scratchpad.shown {
-        if let None = before.scratchpad.shown {
+        if before.scratchpad.shown.is_none() {
             show_scratchpad(
                 &now.scratchpad,
                 config.workspace_size,

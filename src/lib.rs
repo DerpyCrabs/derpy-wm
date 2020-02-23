@@ -151,7 +151,7 @@ pub fn window_type(window_id: impl Into<String>) -> Option<String> {
         .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_string())
         .ok();
     if let Some(typ) = output {
-        let parts: Vec<String> = typ.split("=").map(|s| s.to_string()).collect();
+        let parts: Vec<String> = typ.split('=').map(|s| s.to_string()).collect();
         if parts.len() != 2 {
             return None;
         }
@@ -161,17 +161,16 @@ pub fn window_type(window_id: impl Into<String>) -> Option<String> {
 }
 
 pub fn window_redirect_override(window_id: impl Into<String>) -> bool {
-    if let Some(status) = Command::new("wattr")
+    if let Ok(status) = Command::new("wattr")
         .arg("o")
         .arg(window_id.into())
         .status()
-        .ok()
     {
         if status.success() {
             return true;
         }
     }
-    return false;
+    false
 }
 pub fn is_ignored(window_id: impl Into<String> + Clone) -> bool {
     if let Some(typ) = window_type(window_id.clone().into().as_str()) {
@@ -231,7 +230,7 @@ pub fn tile_windows(
     panel_size: usize,
 ) {
     match windows.len() {
-        0 => return,
+        0 => {}
         1 => {
             let full_w = wsw - 2 * gap;
             let full_h = wsh - 2 * gap - panel_size;
@@ -243,7 +242,7 @@ pub fn tile_windows(
             let right_n = n - left_n;
             let left_h = (wsh - (left_n + 1) * gap - panel_size) / left_n;
             let right_h = (wsh - (right_n + 1) * gap - panel_size) / right_n;
-            let mut left_strip = windows.clone();
+            let mut left_strip = windows;
             let right_strip = left_strip.split_off(left_n);
 
             for (i, wid) in left_strip.iter().enumerate() {
