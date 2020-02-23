@@ -1,7 +1,7 @@
 mod reconciler;
 
 use ::derpywm::{
-    parse_event, window_type, Config, Event, ScratchpadEvent, WindowEventType, WorkspaceEvent,
+    is_ignored, parse_event, Config, Event, ScratchpadEvent, WindowEventType, WorkspaceEvent,
 };
 use reconciler::{actualize_screen, WMState, WorkspaceState};
 
@@ -29,13 +29,9 @@ fn main() {
                 WindowEventType::CreateNotify => {}
                 WindowEventType::MapNotify => {
                     if let Event::Window(last_event) = &last_event {
-                        if last_event.window_id == event.window_id
-                            && last_event.event_type == WindowEventType::CreateNotify
-                        {
-                            if let Some(typ) = window_type(event.window_id.as_str()) {
-                                if typ == "_NET_WM_WINDOW_TYPE_DOCK" {
-                                    continue;
-                                }
+                        if last_event.event_type == WindowEventType::CreateNotify {
+                            if is_ignored(event.window_id.as_str()) {
+                                continue;
                             }
                             add_window_to_workspace(
                                 &mut now.workspaces[now.focused_workspace],

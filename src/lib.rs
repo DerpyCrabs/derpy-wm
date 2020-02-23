@@ -160,6 +160,30 @@ pub fn window_type(window_id: impl Into<String>) -> Option<String> {
     None
 }
 
+pub fn window_redirect_override(window_id: impl Into<String>) -> bool {
+    if let Some(status) = Command::new("wattr")
+        .arg("o")
+        .arg(window_id.into())
+        .status()
+        .ok()
+    {
+        if status.success() {
+            return true;
+        }
+    }
+    return false;
+}
+pub fn is_ignored(window_id: impl Into<String> + Clone) -> bool {
+    if let Some(typ) = window_type(window_id.clone().into().as_str()) {
+        if typ == "_NET_WM_WINDOW_TYPE_DOCK" {
+            return true;
+        }
+    } else {
+        return window_redirect_override(window_id);
+    }
+    false
+}
+
 pub fn map_window(window_id: impl Into<String>) {
     Command::new("mapw")
         .arg("-m")
