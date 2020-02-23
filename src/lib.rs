@@ -142,19 +142,6 @@ pub fn fullscreen_window(window_id: impl Into<String> + Clone, (w, h): (usize, u
         .ok();
 }
 
-pub fn focused_window() -> Option<String> {
-    let output = Command::new("pfw")
-        .output()
-        .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_string())
-        .ok();
-    if let Some(wid) = output {
-        if wid != "" {
-            return Some(wid);
-        }
-    }
-    None
-}
-
 pub fn window_type(window_id: impl Into<String>) -> Option<String> {
     let output = Command::new("xprop")
         .arg("-id")

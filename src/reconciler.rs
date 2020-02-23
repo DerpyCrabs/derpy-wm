@@ -49,139 +49,77 @@ impl WMState {
 }
 
 pub fn actualize_screen(before: &WMState, now: &WMState, config: &Config) -> Option<WindowId> {
+    let focused_workspace_before = &before.workspaces[now.focused_workspace];
+    let focused_workspace = &now.workspaces[now.focused_workspace];
     // Focus workspace if focused_workspace changed
     if before.focused_workspace != now.focused_workspace {
         before.workspaces[before.focused_workspace]
             .windows
             .iter()
             .for_each(unmap_window);
-        now.workspaces[now.focused_workspace]
-            .windows
-            .iter()
-            .for_each(map_window);
+        focused_workspace.windows.iter().for_each(map_window);
     }
 
     // Show scratchpad
     if before.scratchpad.shown != now.scratchpad.shown {
         if let None = before.scratchpad.shown {
-            // Show new window
-            let shown = now.scratchpad.shown.as_ref().unwrap();
-            let shown_wid = now
-                .scratchpad
-                .windows
-                .iter()
-                .find(|(name, _)| name == shown.as_str())
-                .unwrap()
-                .1
-                .as_str();
-
-            map_window(shown_wid);
-            move_window(
-                shown_wid,
-                (config.workspace_size.0 - config.scratchpad_size.0) / 2,
-                (config.workspace_size.1 - config.scratchpad_size.1) / 2,
-                config.scratchpad_size.0,
-                config.scratchpad_size.1,
+            show_scratchpad(
+                &now.scratchpad,
+                config.workspace_size,
+                config.scratchpad_size,
+                config.focused_border.as_str(),
             );
-            foreground_window(shown_wid);
-            border_window(shown_wid, config.focused_border.as_str());
         } else {
             // Need to hide shown before window
-            let shown_before = before.scratchpad.shown.as_ref().unwrap();
-            let shown_before_wid = before
-                .scratchpad
-                .windows
-                .iter()
-                .find(|(name, _)| name == shown_before.as_str())
-                .unwrap()
-                .1
-                .as_str();
+            let shown_before_wid = scratchpad_shown_wid(&before.scratchpad).unwrap();
             unmap_window(shown_before_wid);
 
             // Show new window if needed
-            if let Some(shown) = &now.scratchpad.shown {
-                let shown_wid = now
-                    .scratchpad
-                    .windows
-                    .iter()
-                    .find(|(name, _)| name == shown.as_str())
-                    .unwrap()
-                    .1
-                    .as_str();
-
-                map_window(shown_wid);
-                move_window(
-                    shown_wid,
-                    (config.workspace_size.0 - config.scratchpad_size.0) / 2,
-                    (config.workspace_size.1 - config.scratchpad_size.1) / 2,
-                    config.scratchpad_size.0,
-                    config.scratchpad_size.1,
-                );
-                foreground_window(shown_wid);
-                border_window(shown_wid, config.focused_border.as_str());
-            }
+            show_scratchpad(
+                &now.scratchpad,
+                config.workspace_size,
+                config.scratchpad_size,
+                config.focused_border.as_str(),
+            );
         }
     }
 
     // Unmap moved from workspace window
-    for window in &before.workspaces[now.focused_workspace].windows {
-        if !now.workspaces[now.focused_workspace]
-            .windows
-            .contains(window)
-        {
+    for window in &focused_workspace_before.windows {
+        if !focused_workspace.windows.contains(window) {
             unmap_window(window);
         }
     }
     // Map moved to workspace window
-    for window in &now.workspaces[now.focused_workspace].windows {
-        if !before.workspaces[now.focused_workspace]
-            .windows
-            .contains(window)
-        {
+    for window in &focused_workspace.windows {
+        if !focused_workspace_before.windows.contains(window) {
             map_window(window);
         }
     }
 
     // Add border if window added to focused workspace
-    if before.workspaces[now.focused_workspace].windows.len()
-        < now.workspaces[now.focused_workspace].windows.len()
-    {
+    if focused_workspace_before.windows.len() < focused_workspace.windows.len() {
         border_window(
-            now.workspaces[now.focused_workspace]
-                .windows
-                .iter()
-                .last()
-                .unwrap(),
+            focused_workspace.windows.iter().last().unwrap(),
             config.unfocused_border.as_str(),
         );
     }
 
     // Add border if window got unfullscreened
-    if before.workspaces[now.focused_workspace]
-        .fullscreen
-        .is_some()
-        && now.workspaces[now.focused_workspace].fullscreen.is_none()
-    {
-        let wid = before.workspaces[now.focused_workspace]
-            .fullscreen
-            .as_ref()
-            .unwrap();
-        border_window(wid.clone(), config.unfocused_border.as_str());
+    if focused_workspace_before.fullscreen.is_some() && focused_workspace.fullscreen.is_none() {
+        let wid = focused_workspace_before.fullscreen.as_ref().unwrap();
+        border_window(wid.as_str(), config.unfocused_border.as_str());
     }
 
     // Tile windows if focused workspace windows changed
     // or window got unfullscreened
     // or scratchpad windows changed
-    if (before.workspaces[before.focused_workspace].windows
-        != now.workspaces[now.focused_workspace].windows)
-        || (before.workspaces[now.focused_workspace]
-            .fullscreen
-            .is_some()
-            && now.workspaces[now.focused_workspace].fullscreen.is_none())
+    if (before.workspaces[before.focused_workspace].windows != focused_workspace.windows)
+        || (focused_workspace_before.fullscreen.is_some() && focused_workspace.fullscreen.is_none())
         || (now.scratchpad.windows != before.scratchpad.windows)
     {
         tile_windows(
-            now.workspaces[now.focused_workspace].windows.clone(),
+            focused_workspace.windows.clone(),
             config.gaps,
             config.workspace_size,
             config.panel_width,
@@ -189,39 +127,24 @@ pub fn actualize_screen(before: &WMState, now: &WMState, config: &Config) -> Opt
     }
 
     // Show scratchpad if scratchpad window was unfullscreened
-    if let Some(fullscreen) = &before.workspaces[now.focused_workspace].fullscreen {
-        if let Some(scratchpad) = &now.scratchpad.shown {
-            let scratchpad_wid = now
-                .scratchpad
-                .windows
-                .iter()
-                .find(|(name, _)| name == scratchpad.as_str())
-                .unwrap()
-                .1
-                .as_str();
-            if scratchpad_wid == fullscreen.as_str()
-                && now.workspaces[now.focused_workspace].fullscreen.is_none()
-            {
-                map_window(scratchpad_wid);
-                move_window(
-                    scratchpad_wid,
-                    (config.workspace_size.0 - config.scratchpad_size.0) / 2,
-                    (config.workspace_size.1 - config.scratchpad_size.1) / 2,
-                    config.scratchpad_size.0,
-                    config.scratchpad_size.1,
+    if let Some(fullscreen) = &focused_workspace_before.fullscreen {
+        if let Some(scratchpad_wid) = scratchpad_shown_wid(&now.scratchpad) {
+            if scratchpad_wid == fullscreen.as_str() && focused_workspace.fullscreen.is_none() {
+                show_scratchpad(
+                    &now.scratchpad,
+                    config.workspace_size,
+                    config.scratchpad_size,
+                    config.focused_border.as_str(),
                 );
-                foreground_window(scratchpad_wid);
-                border_window(scratchpad_wid, config.focused_border.as_str());
             }
         }
     }
 
     // Show fullscreen window
-    if before.workspaces[now.focused_workspace].fullscreen
-        != now.workspaces[now.focused_workspace].fullscreen
+    if focused_workspace_before.fullscreen != focused_workspace.fullscreen
         || before.focused_workspace != now.focused_workspace
     {
-        if let Some(fullscreen) = &now.workspaces[now.focused_workspace].fullscreen {
+        if let Some(fullscreen) = &focused_workspace.fullscreen {
             fullscreen_window(fullscreen, config.workspace_size);
             foreground_window(fullscreen);
         }
@@ -229,17 +152,11 @@ pub fn actualize_screen(before: &WMState, now: &WMState, config: &Config) -> Opt
 
     // Actualize focus
     // Focus window if it became fullscreen or on workspace focus change
-    if (before.workspaces[now.focused_workspace]
-        .fullscreen
-        .is_none()
-        && now.workspaces[now.focused_workspace].fullscreen.is_some())
+    if (focused_workspace_before.fullscreen.is_none() && focused_workspace.fullscreen.is_some())
         || (before.focused_workspace != now.focused_workspace
-            && now.workspaces[now.focused_workspace].fullscreen.is_some())
+            && focused_workspace.fullscreen.is_some())
     {
-        let fullscreen = now.workspaces[now.focused_workspace]
-            .fullscreen
-            .as_ref()
-            .unwrap();
+        let fullscreen = focused_workspace.fullscreen.as_ref().unwrap();
         // Unfocus previous window
         if let Some(focused_window) = &now.focused_window {
             border_window(focused_window, config.unfocused_border.as_str());
@@ -249,7 +166,7 @@ pub fn actualize_screen(before: &WMState, now: &WMState, config: &Config) -> Opt
         return Some(fullscreen.to_string());
     }
     // No need to refocus fullscreen windows
-    if now.workspaces[now.focused_workspace].fullscreen.is_some() {
+    if focused_workspace.fullscreen.is_some() {
         return now.focused_window.clone();
     }
     // Focus scratchpad window if shown
@@ -257,15 +174,7 @@ pub fn actualize_screen(before: &WMState, now: &WMState, config: &Config) -> Opt
         || before.focused_workspace != now.focused_workspace)
         && now.scratchpad.shown.is_some()
     {
-        let shown = now.scratchpad.shown.as_ref().unwrap();
-        let shown_wid = now
-            .scratchpad
-            .windows
-            .iter()
-            .find(|(name, _)| name == shown.as_str())
-            .unwrap()
-            .1
-            .as_str();
+        let shown_wid = scratchpad_shown_wid(&now.scratchpad).unwrap();
         // Unfocus previous window
         if let Some(focused_window) = &now.focused_window {
             border_window(focused_window, config.unfocused_border.as_str());
@@ -280,11 +189,7 @@ pub fn actualize_screen(before: &WMState, now: &WMState, config: &Config) -> Opt
         return now.focused_window.clone();
     }
     // Focus last window in focus history
-    if let Some(wid) = now.workspaces[now.focused_workspace]
-        .focus_history
-        .iter()
-        .last()
-    {
+    if let Some(wid) = focused_workspace.focus_history.iter().last() {
         // Unfocus previous window
         if let Some(focused_window) = &now.focused_window {
             border_window(focused_window, config.unfocused_border.as_str());
@@ -295,4 +200,47 @@ pub fn actualize_screen(before: &WMState, now: &WMState, config: &Config) -> Opt
         return Some(wid.to_string());
     }
     now.focused_window.clone()
+}
+
+fn scratchpad_shown_wid(scratchpad: &ScratchpadState) -> Option<&str> {
+    if let Some(shown) = &scratchpad.shown {
+        Some(
+            scratchpad
+                .windows
+                .iter()
+                .find(|(name, _)| name == shown.as_str())
+                .unwrap()
+                .1
+                .as_str(),
+        )
+    } else {
+        None
+    }
+}
+fn show_scratchpad(
+    scratchpad: &ScratchpadState,
+    workspace_size: (usize, usize),
+    scratchpad_size: (usize, usize),
+    border: impl Into<String>,
+) {
+    if let Some(shown) = &scratchpad.shown {
+        let shown_wid = scratchpad
+            .windows
+            .iter()
+            .find(|(name, _)| name == shown.as_str())
+            .unwrap()
+            .1
+            .as_str();
+
+        map_window(shown_wid);
+        move_window(
+            shown_wid,
+            (workspace_size.0 - scratchpad_size.0) / 2,
+            (workspace_size.1 - scratchpad_size.1) / 2,
+            scratchpad_size.0,
+            scratchpad_size.1,
+        );
+        foreground_window(shown_wid);
+        border_window(shown_wid, border);
+    }
 }

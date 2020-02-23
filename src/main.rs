@@ -3,7 +3,7 @@ mod reconciler;
 use ::derpywm::{
     parse_event, window_type, Config, Event, ScratchpadEvent, WindowEventType, WorkspaceEvent,
 };
-use reconciler::{actualize_screen, WMState};
+use reconciler::{actualize_screen, WMState, WorkspaceState};
 
 use std::io::{self, BufRead};
 
@@ -37,28 +37,16 @@ fn main() {
                                     continue;
                                 }
                             }
-                            now.workspaces[now.focused_workspace]
-                                .windows
-                                .push(event.window_id.clone());
-                            now.workspaces[now.focused_workspace]
-                                .focus_history
-                                .push(event.window_id);
+                            add_window_to_workspace(
+                                &mut now.workspaces[now.focused_workspace],
+                                event.window_id.as_str(),
+                            );
                         }
                     }
                 }
                 WindowEventType::DestroyNotify => {
                     for workspace in &mut now.workspaces {
-                        workspace
-                            .focus_history
-                            .retain(|wid| wid != event.window_id.as_str());
-                        workspace
-                            .windows
-                            .retain(|wid| wid != event.window_id.as_str());
-                        if let Some(wid) = &workspace.fullscreen {
-                            if wid == event.window_id.as_str() {
-                                workspace.fullscreen = None;
-                            }
-                        }
+                        remove_window_from_workspace(workspace, event.window_id.as_str());
                     }
                     if let Some(shown) = &now.scratchpad.shown {
                         let (_, shown_wid) = now
@@ -81,10 +69,14 @@ fn main() {
                     }
                 }
                 WindowEventType::FocusIn => {
-                    let history = &mut now.workspaces[now.focused_workspace].focus_history;
-                    if history.contains(&event.window_id) {
-                        history.retain(|wid| wid != event.window_id.as_str());
-                        history.push(event.window_id.clone());
+                    if now.workspaces[now.focused_workspace]
+                        .focus_history
+                        .contains(&event.window_id)
+                    {
+                        focus_window_on_workspace(
+                            &mut now.workspaces[now.focused_workspace],
+                            event.window_id,
+                        );
                     } else {
                         now.focused_window = Some(event.window_id);
                     }
@@ -103,22 +95,11 @@ fn main() {
                         continue;
                     }
                     if let Some(focused_wid) = &now.focused_window {
-                        now.workspaces[now.focused_workspace]
-                            .windows
-                            .retain(|wid| wid != focused_wid.as_str());
-                        now.workspaces[now.focused_workspace]
-                            .focus_history
-                            .retain(|wid| wid != focused_wid.as_str());
-                        if let Some(fullscreen) = &now.workspaces[now.focused_workspace].fullscreen
-                        {
-                            if fullscreen == focused_wid.as_str() {
-                                now.workspaces[now.focused_workspace].fullscreen = None;
-                            }
-                        }
-                        now.workspaces[ws].windows.push(focused_wid.clone());
-                        now.workspaces[ws]
-                            .focus_history
-                            .push(focused_wid.to_string());
+                        remove_window_from_workspace(
+                            &mut now.workspaces[now.focused_workspace],
+                            focused_wid.as_str(),
+                        );
+                        add_window_to_workspace(&mut now.workspaces[ws], focused_wid.as_str());
                     } else {
                         continue;
                     }
@@ -172,12 +153,10 @@ fn main() {
                                 };
                                 let prev_window =
                                     now.workspaces[now.focused_workspace].windows[i].clone();
-                                now.workspaces[now.focused_workspace]
-                                    .focus_history
-                                    .retain(|wid| wid != prev_window.as_str());
-                                now.workspaces[now.focused_workspace]
-                                    .focus_history
-                                    .push(prev_window);
+                                focus_window_on_workspace(
+                                    &mut now.workspaces[now.focused_workspace],
+                                    prev_window,
+                                );
                             }
                         }
                         "RIGHT" => {
@@ -185,12 +164,10 @@ fn main() {
                                 let prev_window = now.workspaces[now.focused_workspace].windows
                                     [focused_index + left_n]
                                     .clone();
-                                now.workspaces[now.focused_workspace]
-                                    .focus_history
-                                    .retain(|wid| wid != prev_window.as_str());
-                                now.workspaces[now.focused_workspace]
-                                    .focus_history
-                                    .push(prev_window);
+                                focus_window_on_workspace(
+                                    &mut now.workspaces[now.focused_workspace],
+                                    prev_window,
+                                );
                             }
                         }
                         "UP" => {
@@ -198,12 +175,10 @@ fn main() {
                                 let prev_window = now.workspaces[now.focused_workspace].windows
                                     [focused_index - 1]
                                     .clone();
-                                now.workspaces[now.focused_workspace]
-                                    .focus_history
-                                    .retain(|wid| wid != prev_window.as_str());
-                                now.workspaces[now.focused_workspace]
-                                    .focus_history
-                                    .push(prev_window);
+                                focus_window_on_workspace(
+                                    &mut now.workspaces[now.focused_workspace],
+                                    prev_window,
+                                );
                             }
                         }
                         "DOWN" => {
@@ -211,12 +186,10 @@ fn main() {
                                 let prev_window = now.workspaces[now.focused_workspace].windows
                                     [focused_index + 1]
                                     .clone();
-                                now.workspaces[now.focused_workspace]
-                                    .focus_history
-                                    .retain(|wid| wid != prev_window.as_str());
-                                now.workspaces[now.focused_workspace]
-                                    .focus_history
-                                    .push(prev_window);
+                                focus_window_on_workspace(
+                                    &mut now.workspaces[now.focused_workspace],
+                                    prev_window,
+                                );
                             }
                         }
                         _ => {}
@@ -227,12 +200,10 @@ fn main() {
                 match event {
                     ScratchpadEvent::AddWindow(name) => {
                         if let Some(focused_wid) = &now.focused_window {
-                            now.workspaces[now.focused_workspace]
-                                .windows
-                                .retain(|wid| wid != focused_wid.as_str());
-                            now.workspaces[now.focused_workspace]
-                                .focus_history
-                                .retain(|wid| wid != focused_wid.as_str());
+                            remove_window_from_workspace(
+                                &mut now.workspaces[now.focused_workspace],
+                                focused_wid.as_str(),
+                            );
                             now.scratchpad.windows.push((name, focused_wid.to_string()));
                         }
                     }
@@ -243,12 +214,10 @@ fn main() {
                             .iter()
                             .find(|(wname, _)| wname == name.as_str())
                         {
-                            now.workspaces[now.focused_workspace]
-                                .windows
-                                .push(wid.to_string());
-                            now.workspaces[now.focused_workspace]
-                                .focus_history
-                                .push(wid.to_string());
+                            add_window_to_workspace(
+                                &mut now.workspaces[now.focused_workspace],
+                                wid.as_str(),
+                            );
                             now.scratchpad
                                 .windows
                                 .retain(|(wname, _)| wname != name.as_str());
@@ -295,4 +264,26 @@ fn main() {
         last_event = event_clone;
         last_state = now;
     }
+}
+
+fn remove_window_from_workspace(state: &mut WorkspaceState, window_id: impl Into<String> + Clone) {
+    let window_id = window_id.into();
+    state.windows.retain(|wid| wid != window_id.as_str());
+    state.focus_history.retain(|wid| wid != window_id.as_str());
+    if let Some(fullscreen) = &state.fullscreen {
+        if fullscreen == window_id.as_str() {
+            state.fullscreen = None;
+        }
+    }
+}
+
+fn add_window_to_workspace(state: &mut WorkspaceState, window_id: impl Into<String> + Clone) {
+    state.windows.push(window_id.clone().into());
+    state.focus_history.push(window_id.into());
+}
+
+fn focus_window_on_workspace(state: &mut WorkspaceState, window_id: impl Into<String>) {
+    let window_id = window_id.into();
+    state.focus_history.retain(|wid| wid != window_id.as_str());
+    state.focus_history.push(window_id);
 }
