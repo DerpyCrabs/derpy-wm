@@ -174,7 +174,17 @@ pub fn window_redirect_override(window_id: impl Into<String>) -> bool {
 }
 pub fn is_ignored(window_id: impl Into<String> + Clone) -> bool {
     if let Some(typ) = window_type(window_id.clone().into().as_str()) {
-        if typ == "_NET_WM_WINDOW_TYPE_DOCK" {
+        if [
+            "_NET_WM_WINDOW_TYPE_DOCK",
+            "_NET_WM_WINDOW_TYPE_UTILITY",
+            "_NET_WM_WINDOW_TYPE_DESKTOP",
+            "_NET_WM_WINDOW_TYPE_SPLASH",
+            "_NET_WM_WINDOW_TYPE_MENU",
+            "_NET_WM_WINDOW_TYPE_TOOLBAR",
+            "_NET_WM_WINDOW_TYPE_DIALOG",
+        ]
+        .contains(&typ.as_str())
+        {
             return true;
         }
     } else {
