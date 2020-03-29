@@ -1,1 +1,6 @@
+- recording events
+- record and replay tests
 - support two monitors
+- floating windows
+- use x events directly
+- return changes to stdout for utils
